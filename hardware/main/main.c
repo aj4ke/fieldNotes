@@ -1,4 +1,3 @@
-#include <stdbool.h>
 #include <stdint.h>
 #include "freertos/FreeRTOS.h"
 #include "driver/gpio.h"

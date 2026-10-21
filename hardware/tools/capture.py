@@ -71,7 +71,7 @@ def main():
             # Read whatever has arrived
             buf += ser.read(ser.in_waiting or 1)
             while True:
-                # Drop anything before the next frame, like the boot log after a reset.
+                # Drop anything before the next frame
                 # If there's no marker yet, keep the last 3 bytes in case it's split across reads.
                 i = buf.find(MAGIC)
                 if i < 0:
