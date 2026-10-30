@@ -1,6 +1,6 @@
 # FieldNotes firmware
 
-FieldNotes hardware using esp32 and an INMP441 microphone.
+FieldNotes hardware using esp32-s3 N16R8, INMP441 microphone, and a button. The onboard RGB LED (GPIO48) lights red while recording.
 
 ## Setup
 
@@ -28,19 +28,19 @@ FieldNotes hardware using esp32 and an INMP441 microphone.
 
    The Makefile expects the activation script at `~/.espressif/tools/activate_idf_v6.0.2.sh`. If yours is somewhere else, add `IDF_ACTIVATE=/path/to/activate_idf_v6.0.2.sh` to the make commands.
 
+   Install [uv](https://docs.astral.sh/uv/) for `make capture`, which pulls in pyserial on first run: `brew install uv` on macOS, or `curl -LsSf https://astral.sh/uv/install.sh | sh` on Linux.
+
 2. Wire the board:
 
 | Part | Pin | esp32 |
 |---|---|---|
 | INMP441 | VDD | 3.3V |
 | INMP441 | GND | GND |
-| INMP441 | SD | GPIO18 |
-| INMP441 | WS | GPIO19 |
-| INMP441 | SCK | GPIO21 |
+| INMP441 | SD | GPIO6 |
+| INMP441 | WS | GPIO4 |
+| INMP441 | SCK | GPIO5 |
 | INMP441 | L/R | GND |
-| LED | anode | GPIO15 |
-| LED | cathode | GND |
-| Button | one side | GPIO23 |
+| Button | one side | GPIO15 |
 | Button | other side | GND |
 
 4. Plug the board in over USBc and check which port its on `ls /dev/cu.*` and configure that in the makefile line 1. 

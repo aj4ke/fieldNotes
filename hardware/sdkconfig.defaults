@@ -1,6 +1,6 @@
-CONFIG_IDF_TARGET="esp32"
-
-# 16 kHz 16-bit audio is 32 KB/s, more than 115200 baud (about 11 KB/s) can carry.
-# "Custom UART" is still UART0 on the USB serial pins, it just unlocks the baud rate setting.
+CONFIG_IDF_TARGET="esp32s3"
 CONFIG_ESP_CONSOLE_UART_CUSTOM=y
 CONFIG_ESP_CONSOLE_UART_BAUDRATE=921600
+CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
+CONFIG_SPIRAM=y
+CONFIG_SPIRAM_MODE_OCT=y

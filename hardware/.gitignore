@@ -6,3 +6,4 @@ dependencies.lock
 __pycache__/
 test-recordings/
 .DS_Store
+.cache

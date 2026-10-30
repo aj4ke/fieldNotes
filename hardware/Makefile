@@ -1,4 +1,4 @@
-ESPPORT ?= /dev/cu.usbserial-0001
+ESPPORT ?= /dev/cu.usbmodem5CE51949831
 
 IDF_ACTIVATE ?= $(HOME)/.espressif/tools/activate_idf_v6.0.2.sh
 IDF_ENV = [ -n "$$IDF_PATH" ] || . $(IDF_ACTIVATE) >/dev/null;
@@ -13,7 +13,7 @@ flash:
 	@$(IDF_PY) -p $(ESPPORT) flash
 
 capture:
-	@$(IDF_ENV) python tools/capture.py -p $(ESPPORT)
+	@uv run tools/capture.py -p $(ESPPORT)
 
 clean:
 	@$(IDF_PY) fullclean

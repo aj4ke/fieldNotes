@@ -1,4 +1,8 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.9"
+# dependencies = ["pyserial>=3.5"]
+# ///
 """Save recordings from the FieldNotes ESP32 as .wav files in hardware/test-recordings/.
 """
 
@@ -44,7 +48,7 @@ def save(pcm, rate, started, skipped):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("-p", "--port", default="/dev/cu.usbserial-0001")
+    parser.add_argument("-p", "--port", default="/dev/cu.usbmodem5CE51949831")
     args = parser.parse_args()
 
     ser = serial.Serial()

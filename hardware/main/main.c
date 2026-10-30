@@ -3,28 +3,30 @@
 #include "driver/gpio.h"
 #include "driver/i2s_std.h"
 #include "driver/uart.h"
+#include "led_strip.h"
 
-#define MIC_SCK_GPIO    GPIO_NUM_21
-#define MIC_WS_GPIO     GPIO_NUM_19
-#define MIC_SD_GPIO     GPIO_NUM_18
-#define LED_GPIO        GPIO_NUM_15
-#define BUTTON_GPIO     GPIO_NUM_23
+#define MIC_SCK_GPIO    GPIO_NUM_5
+#define MIC_WS_GPIO     GPIO_NUM_4
+#define MIC_SD_GPIO     GPIO_NUM_6
+#define RGB_GPIO        GPIO_NUM_48
+#define BUTTON_GPIO     GPIO_NUM_7
 
 #define SAMPLE_RATE_HZ  16000
 #define CHUNK_SAMPLES   (SAMPLE_RATE_HZ / 50)  // 20 ms per read, button poll interval
 
-#define PCM_SHIFT       12 // Gain, 12 adds 24 dB
+#define RGB_LEVEL       16
+#define PCM_SHIFT       16 // Gain, 12 adds 24 dB
 
-#define USB_UART        UART_NUM_0  // console UART, wired to the USB serial chip
+#define USB_UART        UART_NUM_0  // USB serial chip
 
-// Binary frames for tools/capture.py: "FNAU", type, payload length (2 bytes, little-endian), payload.
-// The marker lets capture.py skip the boot log that also comes out of this port after a reset.
+// Binary frames for tools/capture.py: "FNAU" prefix, payload length (2 bytes, little-endian), payload.
 #define FRAME_START     'S'  // payload: uint32 sample rate
 #define FRAME_AUDIO     'A'  // payload: int16 samples
 #define FRAME_END       'E'  // no payload
 
-static int32_t chunk[CHUNK_SAMPLES];
+static int32_t chunk[CHUNK_SAMPLES * 2];
 static int16_t pcm[CHUNK_SAMPLES];
+static led_strip_handle_t rgb;
 
 static i2s_chan_handle_t mic_init(void)
 {
@@ -43,6 +45,9 @@ static i2s_chan_handle_t mic_init(void)
             .din = MIC_SD_GPIO,
         },
     };
+    
+    std_cfg.slot_cfg.slot_mask = I2S_STD_SLOT_BOTH; // expect both LR channels on the new board so audio isn't slowed
+
     ESP_ERROR_CHECK(i2s_channel_init_std_mode(rx, &std_cfg));
     ESP_ERROR_CHECK(i2s_channel_enable(rx));
     return rx;
@@ -50,12 +55,17 @@ static i2s_chan_handle_t mic_init(void)
 
 static void io_init(void)
 {
-    gpio_config_t led_cfg = {
-        .pin_bit_mask = 1ULL << LED_GPIO,
-        .mode = GPIO_MODE_OUTPUT,
+    led_strip_config_t rgb_cfg = {
+        .strip_gpio_num = RGB_GPIO,
+        .max_leds = 1,
+        .led_model = LED_MODEL_WS2812,
+        .color_component_format = LED_STRIP_COLOR_COMPONENT_FMT_GRB,
     };
-    ESP_ERROR_CHECK(gpio_config(&led_cfg));
-    gpio_set_level(LED_GPIO, 0);
+    led_strip_rmt_config_t rmt_cfg = {
+        .resolution_hz = 10 * 1000 * 1000,
+    };
+    ESP_ERROR_CHECK(led_strip_new_rmt_device(&rgb_cfg, &rmt_cfg, &rgb));
+    led_strip_clear(rgb);
 
     gpio_config_t button_cfg = {
         .pin_bit_mask = 1ULL << BUTTON_GPIO,
@@ -90,11 +100,13 @@ void app_main(void)
         bool pressed = gpio_get_level(BUTTON_GPIO) == 0;
         if (pressed && !was_pressed) {
             recording = !recording;
-            gpio_set_level(LED_GPIO, recording);
             if (recording) {
+                led_strip_set_pixel(rgb, 0, RGB_LEVEL, 0, 0);
+                led_strip_refresh(rgb);
                 uint32_t rate = SAMPLE_RATE_HZ;
                 send_frame(FRAME_START, &rate, sizeof(rate));
             } else {
+                led_strip_clear(rgb);
                 send_frame(FRAME_END, NULL, 0);
             }
         }
@@ -107,9 +119,10 @@ void app_main(void)
             continue;
         }
 
-        size_t n = bytes_read / sizeof(chunk[0]);
+        // chunk is L,R,L,R
+        size_t n = bytes_read / (2 * sizeof(chunk[0]));
         for (size_t i = 0; i < n; i++) {
-            int32_t s = chunk[i] >> PCM_SHIFT;
+            int32_t s = chunk[2 * i] >> PCM_SHIFT;
             pcm[i] = s > INT16_MAX ? INT16_MAX : (s < INT16_MIN ? INT16_MIN : s);
         }
         send_frame(FRAME_AUDIO, pcm, n * sizeof(pcm[0]));

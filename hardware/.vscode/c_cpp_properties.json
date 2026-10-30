@@ -1,7 +1,7 @@
 {
   "configurations": [
     {
-      "name": "ESP32",
+      "name": "ESP32-S3",
       "compileCommands": "${workspaceFolder}/build/compile_commands.json"
     }
   ],
